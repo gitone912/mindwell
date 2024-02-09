@@ -151,4 +151,4 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 
 # ...
-CSRF_TRUSTED_ORIGINS = ['https://*.azurewebsites.net/']
+CSRF_TRUSTED_ORIGINS = ['https://mindwell.azurewebsites.net']
