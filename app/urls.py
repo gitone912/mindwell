@@ -10,7 +10,7 @@ urlpatterns = [
     path('login/', login_view, name='login'),
     path('signup/', signup_view, name='signup'),
     path('logout/', logout_view, name='logout'),
-    path('',login_view, name='login'),
+    path('',homepage, name='login'),
     path('playlist/',playlist, name='playlist'),
     path('avatar/',avatar, name='avatar'),
     path('task/',task, name='task'),
@@ -18,5 +18,9 @@ urlpatterns = [
     path('notification/',notification, name='notification'),
     path('congrats/',congrats, name='congrats'),
     path("dynamic_task/", dynamic_tasks, name="dynamic_task"),
+    path('capture_and_analyze/', capture_and_analyze, name='capture_and_analyze'),
+    path('camera/', camera, name='camera'),
+    path('results/',latest_result,name='result'),
+
     
 ]

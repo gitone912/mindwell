@@ -44,3 +44,12 @@ class MotivationalSongs(models.Model):
 
     def __str__(self):
         return self.title
+    
+    
+class CapturedImage(models.Model):
+    image = models.ImageField(upload_to='captured_images/')
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+class Results(models.Model):
+    result = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)

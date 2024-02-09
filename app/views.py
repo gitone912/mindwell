@@ -10,6 +10,8 @@ from .llama import *
 #import csrf extempt
 from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
+def homepage(request):
+    return render(request, 'Homepage.html')
 @csrf_exempt
 def bot(request):
     if request.method == 'POST':
@@ -135,31 +137,35 @@ import vonage
 
 
 def notification(request):
-    dotenv_path = join(dirname(__file__), "../.env")
-    load_dotenv(dotenv_path)
+    if request.method == 'POST':
+        number = request.POST.get('user_input', '') 
+        dotenv_path = join(dirname(__file__), "../.env")
+        load_dotenv(dotenv_path)
 
-    VONAGE_API_KEY = "e8e6fb61"
-    VONAGE_API_SECRET = "7NCsDAIv5fAUFjLV"
-    VONAGE_BRAND_NAME = "akash"
-    TO_NUMBER = "916201933790"
+        VONAGE_API_KEY = "e8e6fb61"
+        VONAGE_API_SECRET = "7NCsDAIv5fAUFjLV"
+        VONAGE_BRAND_NAME = "akash"
+        TO_NUMBER = f'{number}'
 
 
-    client = vonage.Client(key=VONAGE_API_KEY, secret=VONAGE_API_SECRET)
+        client = vonage.Client(key=VONAGE_API_KEY, secret=VONAGE_API_SECRET)
 
-    responseData = client.sms.send_message(
-        {
-            "from": VONAGE_BRAND_NAME,
-            "to": TO_NUMBER,
-            "text": "Hello Dear Hope you doing fine, Wanna Chat a little bit?",
-        }
-    )
+        responseData = client.sms.send_message(
+            {
+                "from": VONAGE_BRAND_NAME,
+                "to": TO_NUMBER,
+                "text": "Hello Dear Hope you doing fine, Wanna Chat a little bit?",
+            }
+        )
 
-    if responseData["messages"][0]["status"] == "0":
-        print("Message sent successfully.")
-        return redirect('dashboard')
+        if responseData["messages"][0]["status"] == "0":
+            print("Message sent successfully.")
+            return redirect('dashboard')
+        else:
+            print(f"Message failed with error: {responseData['messages'][0]['error-text']}")
+            return redirect('dashboard')
     else:
-        print(f"Message failed with error: {responseData['messages'][0]['error-text']}")
-        return redirect('dashboard')
+        return render(request,'notification.html')
 
 
 def congrats(request):
@@ -171,3 +177,57 @@ def dynamic_tasks(request):
     response = run_chatbot(user_input)
             
     return render(request, 'dynamic_tasks.html',{'response': response})
+
+from django.shortcuts import render
+from django.http import HttpResponse
+from django.conf import settings
+from azure.cognitiveservices.vision.computervision import ComputerVisionClient
+from msrest.authentication import CognitiveServicesCredentials
+import requests
+import os
+
+API_KEY = "cd86c2677cef4a878100c664dc169772"
+ENDPOINT = "https://ic2024emotiondetection.cognitiveservices.azure.com/"
+
+@csrf_exempt
+def camera(request):
+    return render(request, 'cmera.html')
+
+@csrf_exempt
+def capture_and_analyze(request):
+    if request.method == 'POST':
+        # Assuming the input field name is 'image'
+        image_file = request.FILES.get('image')
+
+        if image_file:
+            captured_image = CapturedImage.objects.create(image=image_file)
+
+        result = analyze_image(f'/Users/pranaymishra/Desktop/backend_mindwell/backend/{captured_image.image.url}')
+        print(result)
+
+        Results.objects.create(result=result)
+        return redirect('result')
+    else:
+        return render(request, 'cmera.html')
+
+def latest_result(request):
+    latest_object = Results.objects.latest('timestamp')
+    context = {'latest_result': latest_object}
+    return render(request, 'result.html', context)
+    
+def analyze_image(image_path):
+    print("capturing")
+    subscription_key = API_KEY
+    endpoint = ENDPOINT
+
+    computervision_client = ComputerVisionClient(endpoint, CognitiveServicesCredentials(subscription_key))
+
+    with open(image_path, 'rb') as image_file:
+        # Call API with local image
+        tags_result = computervision_client.tag_image_in_stream(image_file)
+
+        # Process the result and return relevant information
+        tags = [{'name': tag.name, 'confidence': tag.confidence * 100} for tag in tags_result.tags]
+        return tags
+
+

@@ -3,12 +3,12 @@ import openai
 
 def generate_prompt(prompt):
 # Set up your OpenAI API key
-    openai.api_key = ' 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'
+    openai.api_key = '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'
 
     
     # Generate response
     response = openai.Completion.create(
-        engine='text-davinci-003',
+        engine='gpt-3.5-turbo-instruct',
         prompt=prompt,
         max_tokens=400,
         temperature=0.7,

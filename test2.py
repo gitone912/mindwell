@@ -1,80 +1,57 @@
-import json
-import pandas as pd
-from sklearn.model_selection import train_test_split
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.svm import SVC
-from sklearn.metrics import classification_report
-import joblib
+from azure.cognitiveservices.vision.face import FaceClient
+from msrest.authentication import CognitiveServicesCredentials
+from PIL import Image, ImageDraw, ImageFont
 
-# Load intents data
-with open('/Users/pranaymishra/Desktop/backend_mindwell/backend/app/intents.json', 'r') as f:
-    data = json.load(f)
 
-# Preprocess data
-dic = {"tag":[], "patterns":[], "responses":[]}
-for i in range(len(data['intents'])):
-    ptrns = data['intents'][i]['patterns']
-    rspns = data['intents'][i]['resonses']
-    tag = data['intents'][i]['tag']
-    for j in range(len(ptrns)):
-        dic['tag'].append(tag)
-        dic['patterns'].append(ptrns[j])
-        dic['responses'].append(rspns)
+APIKEY = "fc840027bd2e413a85efcdce2bae3d0b"
+ENDPOINT = "https://ic2024faceapi.cognitiveservices.azure.com/"
+face_client = FaceClient(ENDPOINT, CognitiveServicesCredentials(APIKEY))
 
-df = pd.DataFrame.from_dict(dic)
+single_image_name = "pexels-photo-3777931.webp"
+image = open(single_image_name, 'r+b')
 
-# Train-test split
-X = df['patterns']
-y = df['tag']
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+face_attributes = ['emotion']
+detected_faces = face_client.face.detect_with_stream(image, face_attributes)
+if not detected_faces:
+	raise Exception('No face detected from image {}'.format(single_image_name))
 
-# Vectorize the text data using TF-IDF
-vectorizer = TfidfVectorizer()
-X_train_vec = vectorizer.fit_transform(X_train)
+def get_rectangle(face_dictionary):
+    rect = face_dictionary.face_rectangle
+    left = rect.left
+    top = rect.top
+    right = left + rect.width
+    bottom = top + rect.height
 
-# Train a Support Vector Machine (SVM) classifier
-model = SVC()
-model.fit(X_train_vec, y_train)
+    return ((left, top), (right, bottom))
 
-# Save the model and vectorizer
-joblib.dump(model, 'intent_classifier_model.joblib')
-joblib.dump(vectorizer, 'intent_vectorizer.joblib')
 
-# Function to predict intent using the saved model
-def predict_intent(user_input):
-    # Load the saved vectorizer
-    vectorizer = joblib.load('intent_vectorizer.joblib')
+def get_emotion(emotion):
+    max_emotion_value = 0.0
+    emotion_type = None
 
-    # Vectorize the user input
-    user_input_vec = vectorizer.transform([user_input])
+    for emotion_name, emotion_value in vars(emotion).items():
+        if emotion_name == "additional_properties":
+           continue
 
-    # Load the saved model
-    model = joblib.load('intent_classifier_model.joblib')
+        if emotion_value > max_emotion_value:
+           max_emotion_value = emotion_value
+           emotion_type = emotion_name
 
-    # Predict the intent
-    intent = model.predict(user_input_vec)[0]
+    return emotion_type
 
-    return intent
+def detect_faces_and_emotions(image_name: str, detected_faces, font_size_percentage = 5):
+    img = Image.open(image_name)
 
-# Function to generate responses based on predicted intents
-def generate_response(intent):
-    # Implement your logic here to generate appropriate responses based on the predicted intents
-    if intent == 'greeting':
-        response = "Hello! How can I assist you today?"
-    elif intent == 'farewell':
-        response = "Goodbye! Take care."
-    elif intent == 'question':
-        response = "I'm sorry, I don't have the information you're looking for."
-    else:
-        response = "I'm here to help. Please let me know how I can assist you."
+    font_size = round(img.height * font_size_percentage / 100)
+    font = ImageFont.truetype('arial.ttf', font_size)
 
-    return response
+    draw = ImageDraw.Draw(img)
+    for face in detected_faces:
+        rect = get_rectangle(face)
+        draw.rectangle(rect, outline='red')
+        face_emotion = get_emotion(face.face_attributes.emotion)
+        draw.text(rect[0], face_emotion, 'white', font=font)
 
-# Function to call the main process
-def main_function(user_input):
-    intent = predict_intent(user_input)
-    print(f"Intent for '{user_input}': {intent}")
-    print(f"Response: {generate_response(intent)}")
+    return img
 
-# Example usage
-main_function("i am not feeling well")
+detect_faces_and_emotions(single_image_name, detected_faces, 3)

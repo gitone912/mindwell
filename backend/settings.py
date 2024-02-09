@@ -132,3 +132,22 @@ TWILIO_ACCOUNT_SID = 'ACcc515749012d3553d61d9a3382dfa509'
 TWILIO_AUTH_TOKEN = '0d179d25f1d2d5613b5bfbc192801fd2'
 TWILIO_PHONE_NUMBER = 'your_twilio_phone_number'
 
+# settings.py
+
+import os
+
+# ...
+
+# Define the absolute filesystem path to the directory that will hold user-uploaded media.
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Define the base URL to serve media files.
+MEDIA_URL = '/media/'
+
+# ...
+
+# Static files (CSS, JavaScript, images)
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
+# ...
